@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+just --justfile ~/.local/share/just/manuq.just --working-directory . "${@}"
