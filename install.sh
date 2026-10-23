@@ -24,3 +24,4 @@ link() {
 link bin/mq ~/.local/bin/mq
 link manuq.just ~/.local/share/just/manuq.just
 link bash/mq-completion.sh ~/.bashrc.d/mq-completion.sh
+link emacs/flatpak-server.el ~/repos/prelude/personal/flatpak-server.el

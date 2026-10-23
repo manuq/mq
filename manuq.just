@@ -54,9 +54,9 @@ encode-webm-audio file fps="":
 
 # ── Editors ──────────────────────────────────────────────
 
-# Launch Emacs (Flatpak) with the prelude config; extra args are forwarded
+# Open files in the running Emacs (Flatpak), or launch it with the prelude config
 emacs *args:
-    flatpak run org.gnu.emacs//stable --init-dir ~/repos/prelude {{ args }}
+    @"{{ mq_repo }}/scripts/emacs.sh" {{ args }}
 
 # ── Threadbare ───────────────────────────────────────────
 
