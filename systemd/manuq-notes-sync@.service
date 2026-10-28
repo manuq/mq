@@ -1,0 +1,14 @@
+# Sync a copy of the notes, using the do-sync recipe of its justfile.
+# The instance is the escaped path of the copy, for example:
+#   systemd-escape --path ~/manuq-notes
+# systemd removes the leading slash when unescaping %I, so add it back.
+[Unit]
+Description=Sync notes in /%I
+OnFailure=notify-failure@%n.service
+
+[Service]
+Type=oneshot
+# Wait a bit, so a burst of edits (like Logseq saving while typing) ends up
+# in a single sync.
+ExecStartPre=/usr/bin/sleep 30
+ExecStart=/usr/bin/just --justfile /%I/justfile --working-directory /%I do-sync

@@ -21,7 +21,12 @@ link() {
     echo "linked  $dest -> $src"
 }
 
+link manuq-notes/justfile ~/manuq-notes/justfile
 link bin/mq ~/.local/bin/mq
 link manuq.just ~/.local/share/just/manuq.just
 link bash/mq-completion.sh ~/.bashrc.d/mq-completion.sh
 link emacs/flatpak-server.el ~/repos/prelude/personal/flatpak-server.el
+link systemd/manuq-notes-sync@.service ~/.config/systemd/user/manuq-notes-sync@.service
+link systemd/manuq-notes-sync@.timer ~/.config/systemd/user/manuq-notes-sync@.timer
+link systemd/manuq-notes-sync@.path ~/.config/systemd/user/manuq-notes-sync@.path
+link systemd/notify-failure@.service ~/.config/systemd/user/notify-failure@.service

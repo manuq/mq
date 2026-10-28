@@ -1,0 +1,39 @@
+# Recipes to sync the notes in this folder with an rclone remote.
+#
+# The remote is private, so it's not in this file: each device stores it in
+# ~/.config/manuq-notes/remote.
+#
+# This justfile is installed as a symlink by the mq repository, so it's
+# excluded from the sync.
+
+remote-file := home_directory() / ".config/manuq-notes/remote"
+remote-destination := if path_exists(remote-file) == "true" { trim(read(remote-file)) } else { error("Write the rclone remote of the notes to " + remote-file) }
+bisync-options := '-v --track-renames --check-access --resilient --exclude=logseq/bak/** --exclude=/justfile'
+
+default:
+	@just --list
+
+test-sync:
+	rclone bisync --dry-run \
+	{{bisync-options}} ./ {{remote-destination}}
+
+do-sync:
+	rclone bisync \
+	{{bisync-options}} ./ {{remote-destination}}
+
+# Don't run it in a copy that is already synced: --resync makes this side
+# win, so files deleted elsewhere would come back.
+# Set up a new copy, in an empty folder that only has this justfile
+first-sync:
+	touch RCLONE_TEST
+	rclone bisync --resync \
+	{{bisync-options}} ./ {{remote-destination}}
+
+# Sync this copy automatically: when notes change, and periodically
+enable-automatic-sync:
+	systemctl --user daemon-reload
+	systemctl --user enable --now "manuq-notes-sync@$(systemd-escape --path "{{module_directory()}}").path" "manuq-notes-sync@$(systemd-escape --path "{{module_directory()}}").timer"
+
+# Stop syncing this copy automatically
+disable-automatic-sync:
+	systemctl --user disable --now "manuq-notes-sync@$(systemd-escape --path "{{module_directory()}}").path" "manuq-notes-sync@$(systemd-escape --path "{{module_directory()}}").timer"

@@ -1,0 +1,12 @@
+# Run manuq-notes-sync@<instance>.service periodically, to receive the
+# changes made on other devices. Local changes are sent right away by
+# manuq-notes-sync@<instance>.path.
+[Unit]
+Description=Sync notes in /%I periodically
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=15min
+
+[Install]
+WantedBy=timers.target

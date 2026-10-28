@@ -1,0 +1,11 @@
+# Start manuq-notes-sync@<instance>.service when a note changes. Watching a
+# folder covers the files directly inside it, and both folders are flat.
+[Unit]
+Description=Sync notes in /%I when they change
+
+[Path]
+PathModified=/%I/pages
+PathModified=/%I/journals
+
+[Install]
+WantedBy=default.target
