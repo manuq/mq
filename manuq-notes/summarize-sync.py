@@ -31,6 +31,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("log")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--output-shown",
+        action="store_true",
+        help="rclone's output was already shown, so don't point to the log file",
+    )
     args, _rclone_flags = parser.parse_known_args()
 
     changes: dict[str, dict[str, str]] = {}
@@ -105,7 +110,8 @@ def main() -> int:
         print("Sync failed:", file=sys.stderr)
         for error in errors:
             print(f"  {error}", file=sys.stderr)
-        print(f"Full log: {args.log}", file=sys.stderr)
+        if not args.output_shown:
+            print(f"Full log: {args.log}", file=sys.stderr)
         return 1
 
     if not counts:
@@ -113,7 +119,8 @@ def main() -> int:
     else:
         print(("Would sync: " if args.dry_run else "Synced: ") + ", ".join(counts) + ".")
     if errors:
-        print(f"rclone recovered from errors on the way. Full log: {args.log}")
+        where = "See rclone's output above." if args.output_shown else f"Full log: {args.log}"
+        print(f"rclone recovered from errors on the way. {where}")
     return 0
 
 

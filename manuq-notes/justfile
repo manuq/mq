@@ -23,23 +23,29 @@ test-sync: (bisync "--dry-run")
 do-sync: (bisync)
 
 # Run rclone bisync. In a terminal, show a summary and keep rclone's output in
-# a log file. Otherwise, like in the systemd service, show rclone's output.
+# a log file. Otherwise, like in the systemd service, show rclone's output
+# followed by the summary, so the journal has both.
 # Set NOTES_SYNC_VERBOSE=1 to see rclone's output in a terminal too.
 [private]
 bisync *flags:
 	#!/usr/bin/bash
 	set -euo pipefail
 	command=(rclone bisync {{flags}} {{bisync-options}} ./ "{{remote-destination}}")
-	if [[ ! -t 1 || -n "${NOTES_SYNC_VERBOSE:-}" ]]; then
-		exec "${command[@]}"
-	fi
-	log="${XDG_CACHE_HOME:-$HOME/.cache}/manuq-notes/last-sync.log"
-	mkdir -p "${log%/*}"
-	status=0
-	"${command[@]}" > "$log" 2>&1 || status=$?
 	# The summary script lives next to the real justfile, in the mq repository.
 	summarize="$(dirname "$(readlink -f justfile)")/summarize-sync.py"
-	python3 "$summarize" "$log" {{flags}} || true
+	status=0
+	if [[ ! -t 1 || -n "${NOTES_SYNC_VERBOSE:-}" ]]; then
+		log="$(mktemp --tmpdir manuq-notes-sync.XXXXXX.log)"
+		trap 'rm -f "$log"' EXIT
+		"${command[@]}" 2>&1 | tee "$log" || status=$?
+		echo "Summary:"
+		python3 "$summarize" "$log" --output-shown {{flags}} || true
+	else
+		log="${XDG_CACHE_HOME:-$HOME/.cache}/manuq-notes/last-sync.log"
+		mkdir -p "${log%/*}"
+		"${command[@]}" > "$log" 2>&1 || status=$?
+		python3 "$summarize" "$log" {{flags}} || true
+	fi
 	exit "$status"
 
 # Don't run it in a copy that is already synced: --resync makes this side
