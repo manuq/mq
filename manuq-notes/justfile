@@ -8,7 +8,10 @@
 
 remote-file := home_directory() / ".config/manuq-notes/remote"
 remote-destination := if path_exists(remote-file) == "true" { trim(read(remote-file)) } else { error("Write the rclone remote of the notes to " + remote-file) }
-bisync-options := '-v --track-renames --check-access --resilient --exclude=logseq/bak/** --exclude=/justfile'
+# When a file changed on both sides, keep the newer one with its name, so the
+# page doesn't disappear from Logseq. The older one is kept as
+# <name>.conflict1, to check if anything is missing.
+bisync-options := '-v --track-renames --check-access --resilient --exclude=logseq/bak/** --exclude=/justfile --conflict-resolve newer --conflict-loser num'
 
 default:
 	@just --list

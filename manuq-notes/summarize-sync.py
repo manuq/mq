@@ -19,6 +19,7 @@ KINDS = {"File is new": "new", "File was deleted": "deleted"}
 CONFLICT = re.compile(r"- WARNING\s+New or changed in both paths\s+- (?P<path>.+)$")
 # rclone colors some messages even when its output isn't a terminal.
 COLOR = re.compile(r"\x1b\[[0-9;]*m")
+WINNER = re.compile(r"^(?P<path>.+): The winner is: (?P<side>Path1|Path2)$")
 LEVEL = re.compile(r"^(?:\d{4}/\d\d/\d\d \d\d:\d\d:\d\d )?(?P<level>[A-Z]+)\s*: (?P<message>.*)$")
 
 
@@ -34,6 +35,7 @@ def main() -> int:
 
     changes: dict[str, dict[str, str]] = {}
     conflicts: list[str] = []
+    winners: dict[str, str] = {}
     errors: list[str] = []
     successful = False
 
@@ -51,6 +53,8 @@ def main() -> int:
             changes.setdefault(change["path"], {})[change["side"]] = kind
         elif conflict := CONFLICT.search(message):
             conflicts.append(conflict["path"])
+        elif winner := WINNER.search(message):
+            winners[winner["path"]] = winner["side"]
 
     sent = received = deleted = 0
     lines = []
@@ -69,10 +73,18 @@ def main() -> int:
                 lines.append(f"  ↓ {path} ({kind} {where})")
                 received += 1
     for path in sorted(conflicts):
-        lines.append(
-            f"  ! {path} (changed on both sides, keeping both: "
-            f"{path}.conflict1 is from here, {path}.conflict2 from the remote)"
-        )
+        if path in winners:
+            newer = "this device" if winners[path] == "Path1" else "the remote"
+            older = "the remote" if winners[path] == "Path1" else "this device"
+            lines.append(
+                f"  ! {path} (changed on both sides: kept the newer one, from {newer}. "
+                f"The one from {older} is now {path}.conflict1)"
+            )
+        else:
+            lines.append(
+                f"  ! {path} (changed on both sides, keeping both: "
+                f"{path}.conflict1 is from here, {path}.conflict2 from the remote)"
+            )
 
     if lines:
         if not successful:
