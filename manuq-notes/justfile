@@ -6,6 +6,9 @@
 # This justfile is installed as a symlink by the mq repository, so it's
 # excluded from the sync.
 
+# bisync names its saved listings after both paths, so use the absolute path:
+# with ./ rclone 1.75 doesn't find the listings saved by earlier runs.
+notes-directory := module_directory() + "/"
 remote-file := home_directory() / ".config/manuq-notes/remote"
 remote-destination := if path_exists(remote-file) == "true" { trim(read(remote-file)) } else { error("Write the rclone remote of the notes to " + remote-file) }
 # When a file changed on both sides, keep the newer one with its name, so the
@@ -30,7 +33,7 @@ do-sync: (bisync)
 bisync *flags:
 	#!/usr/bin/bash
 	set -euo pipefail
-	command=(rclone bisync {{flags}} {{bisync-options}} ./ "{{remote-destination}}")
+	command=(rclone bisync {{flags}} {{bisync-options}} "{{notes-directory}}" "{{remote-destination}}")
 	# The summary script lives next to the real justfile, in the mq repository.
 	summarize="$(dirname "$(readlink -f justfile)")/summarize-sync.py"
 	status=0
@@ -54,7 +57,7 @@ bisync *flags:
 first-sync:
 	touch RCLONE_TEST
 	rclone bisync --resync \
-	{{bisync-options}} ./ {{remote-destination}}
+	{{bisync-options}} "{{notes-directory}}" "{{remote-destination}}"
 
 # Sync this copy automatically: when notes change, and periodically
 enable-automatic-sync:
