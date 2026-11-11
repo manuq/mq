@@ -1,13 +1,15 @@
 #!/usr/bin/bash
-# Save or restore snapshots of Threadbare's saved_game.tres.
+# Save or restore snapshots of Threadbare's saved_game.tres, or clear the
+# saved game and the settings to start fresh.
 #
-# Usage: threadbare-state.sh save|restore <user data dir>
+# Usage: threadbare-state.sh save|restore|clear <user data dir>
 #
-# Snapshots are stored next to it as saved_game_<name>.tres.
+# Snapshots are stored next to it as saved_game_<name>.tres. Clearing keeps
+# them.
 set -euo pipefail
 
 usage() {
-    echo "Usage: $(basename "$0") save|restore <user data dir>" >&2
+    echo "Usage: $(basename "$0") save|restore|clear <user data dir>" >&2
     exit 2
 }
 
@@ -52,8 +54,28 @@ restore() {
     echo "✔ Copied $choice → saved_game.tres"
 }
 
+clear() {
+    files=()
+    for name in saved_game.tres settings.cfg; do
+        [[ -f "$dir/$name" ]] && files+=("$name")
+    done
+    if [[ ${#files[@]} -eq 0 ]]; then
+        echo "Nothing to clear in $dir"
+        exit 0
+    fi
+    echo "This deletes, in $dir:"
+    printf '  %s\n' "${files[@]}"
+    echo "The saved_game_*.tres snapshots are kept."
+    gum confirm "Delete them?" --default=false || { echo "Cancelled."; exit 0; }
+    for name in "${files[@]}"; do
+        rm "$dir/$name"
+        echo "✔ Deleted $name"
+    done
+}
+
 case $action in
     save) save ;;
     restore) restore ;;
+    clear) clear ;;
     *) usage ;;
 esac

@@ -76,6 +76,10 @@ threadbare-restore-state:
 threadbare-save-state:
     @"{{ mq_repo }}/scripts/threadbare-state.sh" save "{{ threadbare_dir }}"
 
+# Delete saved_game.tres and settings.cfg to start fresh, after confirmation
+threadbare-clear:
+    @"{{ mq_repo }}/scripts/threadbare-state.sh" clear "{{ threadbare_dir }}"
+
 # Encode the last movie recording into the XDG videos directory, without audio
 threadbare-encode-last-recording:
     @"{{ mq_repo }}/scripts/threadbare-encode-recording.sh" "{{ threadbare_dir }}"
