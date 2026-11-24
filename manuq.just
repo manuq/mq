@@ -65,6 +65,9 @@ threadbare_dir := home_directory() / ".var/app/org.godotengine.Godot/data/godot/
 # Checkout of the Threadbare repository.
 threadbare_repo := home_directory() / "godot-projects/threadbare"
 
+# Checkout of the Threadbare wiki.
+threadbare_wiki := home_directory() / "repos/threadbare.wiki"
+
 # Query for every pull request. Each recipe below appends its own filters.
 threadbare_pulls_url := "https://github.com/endlessm/threadbare/pulls?q=is%3Apr"
 
@@ -104,6 +107,49 @@ threadbare-pulls-updated:
 # Open the Threadbare pull requests that still need a review, in a browser
 threadbare-pulls-review-required:
     @xdg-open "{{ threadbare_pulls_url }}+state%3Aopen+review%3Arequired"
+
+# Regenerate the quest scene graph pages of the wiki from main, without committing
+threadbare-update-wiki-scene-graphs:
+    #!/usr/bin/bash
+    set -euo pipefail
+    repo="{{ threadbare_repo }}"
+    wiki="{{ threadbare_wiki }}"
+    pages=(LoreQuests-scene-graphs.md StoryQuests-scene-graphs.md)
+    git -C "$repo" fetch -q origin
+    git -C "$wiki" fetch -q
+    # The pages describe the checkout, so it must be exactly origin/main.
+    if [[ $(git -C "$repo" rev-parse HEAD) != $(git -C "$repo" rev-parse origin/main) ]]; then
+        echo "The Threadbare checkout is not at origin/main. Switch to main and pull first." >&2
+        exit 1
+    fi
+    if [[ -n $(git -C "$repo" status --porcelain --untracked-files=no) ]]; then
+        echo "The Threadbare checkout has uncommitted changes. Stash them first." >&2
+        exit 1
+    fi
+    if [[ -n $(git -C "$wiki" status --porcelain -- "${pages[@]}") ]]; then
+        echo "The wiki pages have uncommitted changes. Commit or discard them first." >&2
+        exit 1
+    fi
+    if [[ $(git -C "$wiki" rev-list --count HEAD..@{upstream}) -gt 0 ]]; then
+        echo "The wiki checkout is behind. Run: git -C $wiki pull" >&2
+        exit 1
+    fi
+    cd "$repo"
+    flatpak run --command=godot org.godotengine.Godot --headless --path . \
+        --script "{{ mq_repo }}/scripts/threadbare-wiki-scene-graphs.gd" \
+        -- "$(git rev-parse origin/main)" "$wiki"
+    echo
+    if [[ -z $(git -C "$wiki" status --porcelain -- "${pages[@]}") ]]; then
+        echo "The wiki pages were already up to date."
+        exit 0
+    fi
+    git -C "$wiki" --no-pager diff --stat -- "${pages[@]}"
+    echo
+    echo "Review the changes, then publish them:"
+    echo "  cd $wiki"
+    echo "  git add ${pages[*]}"
+    echo "  git commit -m \"Update quest scene graphs\""
+    echo "  git push"
 
 # Copy MANUQ/daily-report.md to the clipboard as rich text, to paste in Slack
 threadbare-report-to-clipboard:
